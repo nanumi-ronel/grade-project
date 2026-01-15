@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Strategy Pro - Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        .grade-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-[#f8fafc] min-h-screen text-slate-900">
+    <div class="max-w-6xl mx-auto p-5 md:p-8">
+        <!-- 상단 헤더 -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div>
+                <span class="text-indigo-600 font-bold tracking-tight text-sm uppercase">Academic Performance Tracker</span>
+                <h1 class="text-3xl font-extrabold tracking-tight mt-1">성적 분석 & 추적 솔루션</h1>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <!-- 새 분석 시작 버튼 추가 -->
+                <button onclick="resetApp()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    새 분석
+                </button>
+                <button id="save-btn" onclick="saveCurrentResults()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    저장하기
+                </button>
+                <label class="cursor-pointer bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    성적표 스캔
+                    <input type="file" id="multi-upload" accept="image/*" multiple class="hidden" onchange="handleMultipleImages(event)">
+                </label>
+                <button onclick="calculateStrategy()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-100">
+                    전략 분석
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 왼쪽: 정보 입력창 -->
+            <div class="lg:col-span-4 space-y-6">
+                <!-- 학생 및 학교 정보 -->
+                <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h2 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">기본 정보</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">학교명</label>
+                            <input type="text" id="school-name" placeholder="학교명을 입력하거나 스캔하세요" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">학생 이름</label>
+                                <input type="text" id="student-name" placeholder="이름" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-500 mb-1.5 ml-1">학년</label>
+                                <select id="student-grade-level" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="1">1학년</option>
+                                    <option value="2">2학년</option>
+                                    <option value="3">3학년</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 과거 성적 이력 -->
+                <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <h2 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">저장된 성적 이력</h2>
+                    <div id="history-list" class="space-y-2 max-h-60 overflow-y-auto pr-2 text-center py-4">
+                        <div class="loading-spinner mx-auto mb-2"></div>
+                        <p class="text-[10px] text-slate-400">기록 불러오는 중...</p>
+                    </div>
+                </section>
+
+                <!-- 과목 리스트 -->
+                <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">과목 데이터</h2>
+                        <button onclick="addSubject()" class="text-indigo-600 hover:text-indigo-700 text-xs font-bold">+ 추가</button>
+                    </div>
+                    <div id="ai-loading" class="hidden mb-4 p-4 bg-indigo-50 rounded-xl flex items-center gap-3">
+                        <div class="loading-spinner"></div>
+                        <span id="loading-text" class="text-xs font-semibold text-indigo-700 italic">분석 중...</span>
+                    </div>
+                    <div id="subject-list" class="space-y-3"></div>
+                </section>
+            </div>
+
+            <!-- 오른쪽: 분석 대시보드 -->
+            <div class="lg:col-span-8 space-y-6">
+                <!-- 비교 분석 위젯 -->
+                <div id="comparison-widget" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <p class="text-xs font-bold text-slate-400 mb-1 uppercase">이전 평균 등급</p>
+                        <p class="text-2xl font-black text-slate-400" id="prev-avg-grade">-</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                        <p class="text-xs font-bold text-indigo-400 mb-1 uppercase">현재 평균 등급</p>
+                        <p class="text-2xl font-black text-indigo-600" id="curr-avg-grade">-</p>
+                    </div>
+                    <div class="bg-indigo-600 p-5 rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-indigo-100 mb-1 uppercase">변화 추이</p>
+                            <p class="text-xl font-black text-white" id="grade-diff">기록 대기 중</p>
+                        </div>
+                        <div id="trend-icon" class="text-white transition-transform duration-500">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="empty-state" class="bg-white border-2 border-dashed border-slate-200 rounded-3xl h-[400px] flex flex-col items-center justify-center text-slate-400">
+                    <p class="font-medium text-lg mb-1">분석 데이터가 없습니다.</p>
+                    <p class="text-sm">성적표를 스캔하거나 과목을 직접 추가해 주세요.</p>
+                </div>
+
+                <div id="analysis-dashboard" class="hidden space-y-4">
+                    <h3 class="text-lg font-bold text-slate-800 ml-1">과목별 분석 리포트</h3>
+                    <div id="result-container" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Config (Runtime injects this)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let currentUser = null;
+        let lastSavedGrade = null;
+        const apiKey = ""; // Gemini API Key required for scanning
+        const gradeCutoffs = [0.10, 0.34, 0.66, 0.90, 1.00];
+
+        // Auth initialization
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadHistory();
+            } else {
+                signInAnonymously(auth);
+            }
+        });
+
+        // 1. History Loading
+        function loadHistory() {
+            if (!currentUser) return;
+            const historyRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'grades');
+            onSnapshot(historyRef, (snapshot) => {
+                const historyList = document.getElementById('history-list');
+                historyList.innerHTML = '';
+                const docs = snapshot.docs.map(d => ({id: d.id, ...d.data()}))
+                    .sort((a, b) => b.timestamp - a.timestamp);
+
+                if (docs.length === 0) {
+                    historyList.innerHTML = '<p class="text-xs text-slate-400 py-4">저장된 기록이 없습니다.</p>';
+                    return;
+                }
+
+                lastSavedGrade = docs[0]; 
+
+                docs.forEach(data => {
+                    const date = new Date(data.timestamp).toLocaleDateString();
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all group flex flex-col";
+                    btn.innerHTML = `
+                        <p class="text-xs font-bold text-slate-800">${data.schoolName || '미지정 학교'}</p>
+                        <div class="flex justify-between items-center mt-1">
+                            <span class="text-[10px] text-slate-400">${date}</span>
+                            <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">평균 ${data.avgGrade}등급</span>
+                        </div>
+                    `;
+                    historyList.appendChild(btn);
+                });
+            }, (err) => console.error("Firestore Error:", err));
+        }
+
+        // 2. Image Processing
+        window.handleMultipleImages = async (event) => {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+            
+            const loading = document.getElementById('ai-loading');
+            const loadingText = document.getElementById('loading-text');
+            loading.classList.remove('hidden');
+            
+            for (let i = 0; i < files.length; i++) {
+                loadingText.innerText = `이미지 분석 (${i+1}/${files.length})`;
+                const base64 = await fileToBase64(files[i]);
+                await processImage(base64);
+            }
+            loading.classList.add('hidden');
+            event.target.value = '';
+        };
+
+        const fileToBase64 = (file) => new Promise(res => {
+            const r = new FileReader();
+            r.onload = () => res(r.result.split(',')[1]);
+            r.readAsDataURL(file);
+        });
+
+        async function processImage(base64) {
+            const prompt = `Extract info from report card image as JSON: schoolName, studentName, subjects: [{name, achievement, rank, total}]. JSON only.`;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: base64 } }] }], generationConfig: { responseMimeType: "application/json" } })
+                });
+                const data = await res.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) return;
+                const result = JSON.parse(text);
+                
+                if (result.schoolName) document.getElementById('school-name').value = result.schoolName;
+                if (result.studentName) document.getElementById('student-name').value = result.studentName;
+                
+                result.subjects?.forEach(s => addSubjectWithValue(s.name, s.achievement, s.rank, s.total));
+            } catch(e) { console.error("API Error:", e); }
+        }
+
+        // 3. UI Functions
+        window.addSubjectWithValue = (n='', a='A', r='', t='') => {
+            const list = document.getElementById('subject-list');
+            const div = document.createElement('div');
+            div.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 relative group animate-fade-in';
+            div.innerHTML = `
+                <input type="text" value="${n}" class="subject-name font-bold text-slate-800 bg-transparent border-none p-0 outline-none w-full mb-2" placeholder="과목명">
+                <div class="grid grid-cols-3 gap-2">
+                    <select class="subject-achievement text-xs bg-white rounded-lg p-2 border-none outline-none shadow-sm">
+                        <option value="A" ${a==='A'?'selected':''}>A</option>
+                        <option value="B" ${a==='B'?'selected':''}>B</option>
+                        <option value="C" ${a==='C'?'selected':''}>C</option>
+                    </select>
+                    <input type="number" value="${r}" class="current-rank text-xs bg-white rounded-lg p-2 border-none outline-none shadow-sm" placeholder="등수">
+                    <input type="number" value="${t}" class="total-students text-xs bg-white rounded-lg p-2 border-none outline-none shadow-sm" placeholder="총원">
+                </div>
+                <button onclick="this.parentElement.remove()" class="absolute top-4 right-4 text-slate-300 hover:text-red-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+            `;
+            list.appendChild(div);
+        }
+        window.addSubject = () => addSubjectWithValue();
+
+        // New feature: Reset App
+        window.resetApp = () => {
+            if (confirm("입력된 모든 데이터가 사라집니다. 새로 시작하시겠습니까?")) {
+                document.getElementById('school-name').value = '';
+                document.getElementById('student-name').value = '';
+                document.getElementById('subject-list').innerHTML = '';
+                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('analysis-dashboard').classList.add('hidden');
+                document.getElementById('comparison-widget').classList.add('hidden');
+                document.getElementById('save-btn').classList.add('hidden');
+            }
+        }
+
+        // 4. Analysis
+        window.calculateStrategy = () => {
+            const rows = document.querySelectorAll('#subject-list > div');
+            const results = [];
+            let totalGradeSum = 0;
+            let count = 0;
+
+            rows.forEach(row => {
+                const name = row.querySelector('.subject-name').value;
+                const rank = parseInt(row.querySelector('.current-rank').value);
+                const total = parseInt(row.querySelector('.total-students').value);
+                if (name && rank && total) {
+                    const ratio = rank / total;
+                    let curGrade = 5;
+                    for (let i = 0; i < gradeCutoffs.length; i++) {
+                        if (ratio <= gradeCutoffs[i]) { curGrade = i + 1; break; }
+                    }
+                    totalGradeSum += curGrade;
+                    count++;
+                    const target = Math.max(1, curGrade - 1);
+                    const targetRank = Math.floor(total * (gradeCutoffs[target - 2] || 0));
+                    results.push({ name, curGrade, target, diff: rank - targetRank, total });
+                }
+            });
+
+            if (count === 0) return;
+            const avg = (totalGradeSum / count).toFixed(2);
+            showResults(results, avg);
+        }
+
+        function showResults(results, avg) {
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('analysis-dashboard').classList.remove('hidden');
+            document.getElementById('comparison-widget').classList.remove('hidden');
+            document.getElementById('save-btn').classList.remove('hidden');
+            document.getElementById('curr-avg-grade').innerText = `${avg}`;
+            
+            if (lastSavedGrade) {
+                document.getElementById('prev-avg-grade').innerText = `${lastSavedGrade.avgGrade}`;
+                const diff = (parseFloat(lastSavedGrade.avgGrade) - parseFloat(avg)).toFixed(2);
+                const diffText = diff > 0 ? `${Math.abs(diff)} 상승` : (diff < 0 ? `${Math.abs(diff)} 하락` : "변동 없음");
+                document.getElementById('grade-diff').innerText = diffText;
+                document.getElementById('trend-icon').style.transform = diff > 0 ? "rotate(0deg)" : "rotate(180deg)";
+            }
+
+            const container = document.getElementById('result-container');
+            container.innerHTML = '';
+            results.sort((a,b) => a.diff - b.diff).forEach((item) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-2xl border border-slate-100 shadow-sm animate-fade-in';
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-slate-800">${item.name}</h4>
+                        <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">${item.curGrade}등급</span>
+                    </div>
+                    <p class="text-sm text-slate-600 mb-2">${item.target}등급까지 단 <b>${item.diff}명</b> 남았습니다.</p>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-indigo-600 h-full rounded-full transition-all duration-1000" style="width: ${Math.max(10, 100 - (item.diff/item.total*100))}%"></div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            window.currentAnalysis = { avg, results };
+        }
+
+        // 5. Data Saving
+        window.saveCurrentResults = async () => {
+            if (!currentUser || !window.currentAnalysis) return;
+            const schoolName = document.getElementById('school-name').value;
+            const studentName = document.getElementById('student-name').value;
+            const btn = document.getElementById('save-btn');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<div class="loading-spinner"></div> 저장 중...';
+            btn.disabled = true;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'grades'), {
+                    schoolName, studentName, avgGrade: window.currentAnalysis.avg, timestamp: Date.now()
+                });
+                alert("기록이 안전하게 저장되었습니다.");
+            } catch(e) { alert("저장 실패: " + e.message); } 
+            finally { btn.innerHTML = original; btn.disabled = false; }
+        }
+    </script>
+</body>
+</html>
