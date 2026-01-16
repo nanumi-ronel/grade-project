@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grade Strategy Pro - Smart Edition</title>
+    <title>Grade Strategy Pro - Ready to Use</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
@@ -18,7 +18,6 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-[#f8fafc] min-h-screen text-slate-900">
@@ -28,14 +27,14 @@
             <div>
                 <span class="text-indigo-600 font-bold tracking-tight text-sm uppercase">Academic Performance Tracker</span>
                 <h1 class="text-3xl font-extrabold tracking-tight mt-1">성적 분석 & 향상 전략</h1>
-                <p class="text-xs text-slate-500 mt-1" id="system-notice">* 학년에 따라 5등급제/9등급제가 자동 적용됩니다.</p>
+                <p class="text-xs text-slate-500 mt-1" id="system-notice">* API 키를 입력해야 사진 분석이 가능합니다.</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button onclick="resetApp()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm">
+                <!-- API 키 입력 필드 추가 (보안을 위해 깃허브 소스에는 안 남도록 처리) -->
+                <input type="password" id="user-api-key" placeholder="Gemini API Key 입력" class="text-xs border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                
+                <button onclick="resetApp()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all">
                     새로고침
-                </button>
-                <button id="save-btn" onclick="saveCurrentResults()" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md">
-                    데이터 저장
                 </button>
                 <label class="cursor-pointer bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
                     성적표 스캔 (OCR)
@@ -50,84 +49,47 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- 좌측: 설정 및 입력 영역 -->
             <div class="lg:col-span-4 space-y-6">
-                <!-- 학생 정보 입력 카드 -->
                 <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <h2 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">학생 및 학기 정보</h2>
                     <div class="space-y-4">
-                        <input type="text" id="school-name" placeholder="학교명" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <input type="text" id="school-name" placeholder="학교명" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
                         <div class="grid grid-cols-2 gap-3">
-                            <input type="text" id="student-name" placeholder="학생 이름" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <select id="student-grade-level" onchange="updateSystemNotice()" class="w-full bg-slate-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <input type="text" id="student-name" placeholder="학생 이름" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
+                            <select id="student-grade-level" onchange="updateSystemNotice()" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
                                 <option value="1">1학년 (5등급제)</option>
                                 <option value="2">2학년 (5등급제)</option>
                                 <option value="3" selected>3학년 (9등급제)</option>
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <select id="semester" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
-                                <option value="1학기">1학기</option><option value="2학기">2학기</option>
-                            </select>
-                            <select id="exam-type" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
-                                <option value="중간고사">중간고사</option><option value="기말고사">기말고사</option>
-                            </select>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 성적 히스토리 카드 -->
-                <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h2 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">저장된 기록</h2>
-                    <div id="history-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
-                        <p class="text-[10px] text-slate-400 text-center py-4 italic">데이터를 불러오는 중...</p>
                     </div>
                 </section>
 
                 <!-- 과목 입력 리스트 -->
                 <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">과목별 성적 입력</h2>
-                        <button onclick="addSubject()" class="text-indigo-600 hover:text-indigo-700 text-xs font-bold transition-colors">+ 과목 추가</button>
+                        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">과목별 성적</h2>
+                        <button onclick="addSubject()" class="text-indigo-600 text-xs font-bold">+ 추가</button>
                     </div>
-                    <!-- OCR 로딩 인디케이터 -->
-                    <div id="ai-loading" class="hidden mb-4 p-4 bg-indigo-50 rounded-xl flex items-center gap-3 animate-pulse">
+                    <div id="ai-loading" class="hidden mb-4 p-4 bg-indigo-50 rounded-xl flex items-center gap-3">
                         <div class="loading-spinner"></div>
-                        <span class="text-xs font-semibold text-indigo-700">이미지 분석 및 학년 판별 중...</span>
+                        <span class="text-xs font-semibold text-indigo-700 italic">성적표 분석 중...</span>
                     </div>
                     <div id="subject-list" class="space-y-3"></div>
                 </section>
             </div>
 
-            <!-- 우측: 분석 대시보드 영역 -->
+            <!-- 우측: 분석 결과 영역 -->
             <div class="lg:col-span-8 space-y-6">
-                <!-- 빈 상태 표시 -->
-                <div id="empty-state" class="bg-white border-2 border-dashed border-slate-200 rounded-3xl h-[400px] flex flex-col items-center justify-center text-slate-400 text-center p-6 transition-all">
-                    <div class="bg-slate-50 p-4 rounded-full mb-4">
-                        <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    </div>
-                    <p class="font-bold text-slate-500 text-lg mb-1">분석 데이터가 없습니다</p>
-                    <p class="text-sm max-w-xs">직접 입력하거나 성적표 사진을 업로드하여 분석을 시작하세요.</p>
+                <div id="empty-state" class="bg-white border-2 border-dashed border-slate-200 rounded-3xl h-[400px] flex flex-col items-center justify-center text-slate-400 text-center p-6">
+                    <p class="font-bold text-slate-500 text-lg">데이터 분석 대기 중</p>
                 </div>
-
-                <!-- 분석 결과 대시보드 -->
                 <div id="analysis-dashboard" class="hidden space-y-4 animate-fade-in">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm transition-hover hover:shadow-md">
-                            <p class="text-xs font-bold text-indigo-400 mb-1 uppercase tracking-wider">종합 평균 등급</p>
-                            <div class="flex items-baseline gap-2">
-                                <p class="text-4xl font-black text-indigo-600" id="curr-avg-grade">-</p>
-                                <p class="text-xs text-slate-400 font-medium" id="system-label"></p>
-                            </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-indigo-400 uppercase">평균 등급</p>
+                            <p class="text-4xl font-black text-indigo-600" id="curr-avg-grade">-</p>
                         </div>
-                        <div class="bg-indigo-600 p-6 rounded-2xl shadow-lg flex items-center justify-between text-white group overflow-hidden relative">
-                            <div class="relative z-10">
-                                <p class="text-xs opacity-80 uppercase font-bold mb-1">Analysis Mode</p>
-                                <p class="text-xl font-bold" id="mode-display">분석 성공</p>
-                            </div>
-                            <div class="bg-white/20 p-3 rounded-full relative z-10">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            </div>
-                            <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
-                        </div>
+                        <p class="text-xl font-bold text-slate-700" id="mode-display"></p>
                     </div>
                     <div id="result-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
@@ -135,136 +97,40 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        /**
-         * 보안 경고: GitHub에 업로드할 때 아래 설정값들이 직접 노출되지 않도록 주의하세요.
-         * 본 환경에서는 주입된 시스템 변수를 사용하여 안전합니다.
-         */
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* 개인용으로 쓸 경우 여기에 설정 입력 */ };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'grade-app-default';
-        const apiKey = typeof __api_key !== 'undefined' ? __api_key : ""; // Gemini API 키
-
-        // 등급제 상수
+    <script>
+        // 이 버전은 Firebase 없이 로컬/깃허브 페이지에서 OCR 동작 확인용으로 최적화됨
         const system9 = [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00];
         const system5 = [0.10, 0.34, 0.66, 0.90, 1.00];
 
-        let user = null;
-        let historyData = [];
-
-        // 초기 인증 처리
-        const init = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("인증 오류:", error);
-            }
-        };
-        init();
-
-        onAuthStateChanged(auth, (u) => {
-            user = u;
-            if (u) loadHistory();
-        });
-
-        // 히스토리 관리 (보안을 위해 규칙 적용 경로 사용)
-        function loadHistory() {
-            if (!user) return;
-            const ref = collection(db, 'artifacts', appId, 'users', user.uid, 'grades');
-            onSnapshot(ref, (snapshot) => {
-                const list = document.getElementById('history-list');
-                list.innerHTML = '';
-                historyData = snapshot.docs.map(d => ({id: d.id, ...d.data()}))
-                    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-                if (historyData.length === 0) {
-                    list.innerHTML = '<p class="text-xs text-slate-400 py-6 text-center">저장된 데이터가 없습니다.</p>';
-                    return;
-                }
-
-                historyData.forEach((data, index) => {
-                    const date = new Date(data.timestamp).toLocaleDateString();
-                    const div = document.createElement('div');
-                    div.className = "relative group animate-fade-in mb-2";
-                    div.innerHTML = `
-                        <div onclick="window.loadRecord(${index})" class="text-left w-full p-3 rounded-xl bg-white border border-slate-100 shadow-sm hover:border-indigo-400 cursor-pointer pr-10 transition-all hover:bg-indigo-50/30">
-                            <p class="text-[10px] font-bold text-indigo-500">${data.gradeLevel}학년 ${data.semester}</p>
-                            <p class="text-sm font-bold text-slate-800">${data.studentName} (${data.avgGrade}등급)</p>
-                            <p class="text-[8px] text-slate-400">${date}</p>
-                        </div>
-                        <button onclick="event.stopPropagation(); window.deleteRecord('${data.id}')" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    `;
-                    list.appendChild(div);
-                });
-            }, (err) => console.error("Firestore Error:", err));
-        }
-
-        window.deleteRecord = async (docId) => {
-            if (!user) return;
-            if (!confirm("정말로 이 기록을 삭제하시겠습니까?")) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'grades', docId));
-            } catch (e) { console.error("삭제 오류:", e); }
-        };
-
-        window.saveCurrentResults = async () => {
-            if (!user || !window.currentAnalysis) return;
-            const sn = document.getElementById('school-name').value;
-            const stn = document.getElementById('student-name').value;
-            if(!sn || !stn) return alert("학교명과 이름을 입력해주셔야 저장이 가능합니다.");
-
-            const btn = document.getElementById('save-btn');
-            btn.disabled = true;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'grades'), {
-                    schoolName: sn,
-                    studentName: stn,
-                    gradeLevel: document.getElementById('student-grade-level').value,
-                    semester: document.getElementById('semester').value,
-                    examType: document.getElementById('exam-type').value,
-                    avgGrade: window.currentAnalysis.avg,
-                    rawSubjects: window.currentAnalysis.rawInputs,
-                    timestamp: Date.now()
-                });
-                alert("기록이 안전하게 저장되었습니다.");
-            } catch (e) { alert("저장 중 오류가 발생했습니다."); }
-            finally { btn.disabled = false; }
-        };
-
-        // 등급제 판별 유틸리티
-        function getCurrentGradeSystem() {
-            const currentYear = new Date().getFullYear();
-            const gradeLevel = parseInt(document.getElementById('student-grade-level').value);
-            if (currentYear >= 2027 || gradeLevel < 3) {
-                return { cutoffs: system5, name: "5등급제" };
-            } else {
-                return { cutoffs: system9, name: "9등급제" };
-            }
-        }
-
         window.updateSystemNotice = () => {
-            const system = getCurrentGradeSystem();
-            document.getElementById('system-notice').innerText = `* 선택된 학년 기준: [${system.name}] 분석 시스템 가동 중`;
-            if(window.currentAnalysis) calculateStrategy();
+            const gl = parseInt(document.getElementById('student-grade-level').value);
+            const is5 = gl < 3;
+            document.getElementById('system-notice').innerText = `* 현재 [${is5 ? '5등급제' : '9등급제'}] 시스템이 적용됩니다.`;
         };
 
-        // 전략 계산 엔진
+        window.addSubjectWithValue = (n='', a='A', r='', t='') => {
+            const list = document.getElementById('subject-list');
+            const div = document.createElement('div');
+            div.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 relative group animate-fade-in';
+            div.innerHTML = `
+                <input type="text" value="${n}" class="subject-name font-bold text-slate-800 bg-transparent w-full mb-1 outline-none" placeholder="과목명">
+                <div class="grid grid-cols-3 gap-2">
+                    <select class="subject-achievement text-[10px] p-2 rounded-lg border-none"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
+                    <input type="number" value="${r}" class="current-rank text-[10px] p-2 rounded-lg border-none" placeholder="등수">
+                    <input type="number" value="${t}" class="total-students text-[10px] p-2 rounded-lg border-none" placeholder="총원">
+                </div>
+                <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-slate-300 hover:text-red-400">×</button>
+            `;
+            list.appendChild(div);
+        };
+        window.addSubject = () => addSubjectWithValue();
+
         window.calculateStrategy = () => {
             const rows = document.querySelectorAll('#subject-list > div');
-            const system = getCurrentGradeSystem();
-            const raw = [];
+            const gl = parseInt(document.getElementById('student-grade-level').value);
+            const cutoffs = gl < 3 ? system5 : system9;
+            const sysName = gl < 3 ? "5등급제" : "9등급제";
+            
             let sum = 0, count = 0;
             const container = document.getElementById('result-container');
             container.innerHTML = '';
@@ -274,143 +140,70 @@
                 const r = parseInt(row.querySelector('.current-rank').value);
                 const t = parseInt(row.querySelector('.total-students').value);
                 
-                if (n && !isNaN(r) && !isNaN(t) && t > 0) {
+                if (n && r && t) {
                     const ratio = r/t;
-                    let g = system.cutoffs.length;
-                    for(let i=0; i<system.cutoffs.length; i++) {
-                        if(ratio <= system.cutoffs[i]) { g = i+1; break; }
-                    }
+                    let g = cutoffs.length;
+                    for(let i=0; i<cutoffs.length; i++) { if(ratio <= cutoffs[i]) { g = i+1; break; } }
                     sum += g; count++;
-                    raw.push({name:n, achievement: row.querySelector('.subject-achievement').value, rank:r, total:t});
                     
                     const card = document.createElement('div');
-                    card.className = 'bg-white p-5 rounded-2xl border border-slate-100 shadow-sm animate-fade-in flex flex-col justify-between hover:border-indigo-200 transition-colors';
-                    
-                    let message = "";
-                    let badgeColor = "bg-indigo-50 text-indigo-600 border-indigo-100";
-
-                    if (g === 1) {
-                        const nextLimitRank = Math.floor(t * system.cutoffs[0]);
-                        const fallbackCount = Math.max(1, (nextLimitRank + 1) - r);
-                        message = `<p class="text-sm text-slate-600">현재 1등급 유지 중입니다. 약 <b class="text-red-500">${fallbackCount}등</b> 하락 시 2등급으로 변경됩니다.</p>`;
-                        badgeColor = "bg-emerald-50 text-emerald-600 border-emerald-100";
-                    } else {
-                        const targetG = g - 1;
-                        const targetLimitRank = Math.floor(t * (system.cutoffs[targetG - 1] || 0));
-                        const diff = Math.max(1, r - targetLimitRank);
-                        message = `<p class="text-sm text-slate-600">${targetG}등급 향상을 위해 약 <b class="text-indigo-600">${diff}등</b>의 성적 향상이 필요합니다.</p>`;
-                    }
-
-                    card.innerHTML = `
-                        <div class="flex justify-between items-center mb-3">
-                            <h4 class="font-bold text-slate-800 truncate mr-2">${n}</h4>
-                            <span class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">${g}등급</span>
-                        </div>
-                        ${message}
-                    `;
+                    card.className = 'bg-white p-4 rounded-xl border border-slate-100 shadow-sm';
+                    card.innerHTML = `<h4 class="font-bold text-slate-800">${n} - ${g}등급</h4><p class="text-xs text-slate-500 mt-1">분석 완료</p>`;
                     container.appendChild(card);
                 }
             });
 
             if (count > 0) {
-                const avg = (sum/count).toFixed(2);
-                document.getElementById('curr-avg-grade').innerText = avg;
-                document.getElementById('system-label').innerText = `/ ${system.name}`;
+                document.getElementById('curr-avg-grade').innerText = (sum/count).toFixed(2);
+                document.getElementById('mode-display').innerText = sysName;
                 document.getElementById('empty-state').classList.add('hidden');
                 document.getElementById('analysis-dashboard').classList.remove('hidden');
-                document.getElementById('save-btn').classList.remove('hidden');
-                document.getElementById('mode-display').innerText = `${system.name} 분석 결과`;
-                window.currentAnalysis = { avg, rawInputs: raw };
             }
         };
 
-        // 이미지 처리 및 OCR 연동
         window.handleMultipleImages = async (e) => {
+            const apiKey = document.getElementById('user-api-key').value;
+            if(!apiKey) return alert("상단에 Gemini API Key를 입력해주세요!");
+
             const files = Array.from(e.target.files);
-            if (!files.length) return;
-            
             document.getElementById('ai-loading').classList.remove('hidden');
+            
             for (let f of files) {
                 const b64 = await new Promise(r => {
                     const reader = new FileReader();
                     reader.onload = () => r(reader.result.split(',')[1]);
                     reader.readAsDataURL(f);
                 });
-                await processImage(b64);
+                await processImage(b64, apiKey);
             }
             document.getElementById('ai-loading').classList.add('hidden');
-            e.target.value = '';
             calculateStrategy();
         };
 
-        async function processImage(b64) {
-            if (!apiKey) {
-                alert("분석을 위한 API 키가 설정되지 않았습니다.");
-                return;
-            }
-
-            const prompt = `성적표 이미지에서 다음 정보를 추출하여 정확한 JSON으로 응답하세요:
-            - schoolName: 학교명
-            - studentName: 이름
-            - gradeLevel: 학년 (숫자 1, 2, 3 중 하나)
-            - subjects: [{name: 과목명, achievement: 성취도(A/B/C), rank: 석차, total: 수강자수}]`;
-            
+        async function processImage(b64, key) {
+            const prompt = "성적표 이미지에서 schoolName, studentName, gradeLevel(1,2,3 중 하나), subjects[{name, achievement, rank, total}]를 JSON으로 추출해줘.";
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: b64 } }] }], generationConfig: { responseMimeType: "application/json" } })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: b64 } }] }] })
                 });
                 const d = await res.json();
-                const result = JSON.parse(d.candidates[0].content.parts[0].text);
+                const text = d.candidates[0].content.parts[0].text.replace(/```json|```/g, '');
+                const result = JSON.parse(text);
                 
                 if (result.schoolName) document.getElementById('school-name').value = result.schoolName;
                 if (result.studentName) document.getElementById('student-name').value = result.studentName;
                 if (result.gradeLevel) {
-                    const gl = String(result.gradeLevel).replace(/[^1-3]/g, '');
-                    if (gl) {
-                        document.getElementById('student-grade-level').value = gl;
-                        updateSystemNotice();
-                    }
+                    document.getElementById('student-grade-level').value = result.gradeLevel.toString().replace(/[^1-3]/g, '1');
+                    updateSystemNotice();
                 }
                 result.subjects?.forEach(s => addSubjectWithValue(s.name, s.achievement, s.rank, s.total));
-            } catch(e) { console.error("OCR 분석 오류:", e); }
+            } catch(e) { 
+                console.error(e); 
+                alert("인식 오류: API 키가 맞는지, 혹은 이미지 화질을 확인해주세요.");
+            }
         }
-
-        window.addSubjectWithValue = (n='', a='A', r='', t='') => {
-            const list = document.getElementById('subject-list');
-            const div = document.createElement('div');
-            div.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 relative group animate-fade-in';
-            div.innerHTML = `
-                <input type="text" value="${n}" class="subject-name font-bold text-slate-800 bg-transparent w-full mb-2 outline-none" placeholder="과목명">
-                <div class="grid grid-cols-3 gap-2">
-                    <select class="subject-achievement text-[10px] p-2 rounded-lg border-none shadow-sm outline-none">
-                        <option value="A" ${a==='A'?'selected':''}>A</option>
-                        <option value="B" ${a==='B'?'selected':''}>B</option>
-                        <option value="C" ${a==='C'?'selected':''}>C</option>
-                    </select>
-                    <input type="number" value="${r}" class="current-rank text-[10px] p-2 rounded-lg border-none shadow-sm outline-none" placeholder="등수">
-                    <input type="number" value="${t}" class="total-students text-[10px] p-2 rounded-lg border-none shadow-sm outline-none" placeholder="총원">
-                </div>
-                <button onclick="this.parentElement.remove()" class="absolute top-4 right-4 text-slate-300 hover:text-red-400 transition-colors">×</button>
-            `;
-            list.appendChild(div);
-        };
-        window.addSubject = () => addSubjectWithValue();
-
-        window.loadRecord = (idx) => {
-            const d = historyData[idx];
-            if (!d) return;
-            document.getElementById('subject-list').innerHTML = '';
-            document.getElementById('school-name').value = d.schoolName || '';
-            document.getElementById('student-name').value = d.studentName || '';
-            document.getElementById('student-grade-level').value = d.gradeLevel || '3';
-            document.getElementById('semester').value = d.semester || '1학기';
-            document.getElementById('exam-type').value = d.examType || '중간고사';
-            d.rawSubjects?.forEach(s => addSubjectWithValue(s.name, s.achievement, s.rank, s.total));
-            updateSystemNotice();
-            setTimeout(calculateStrategy, 100);
-        };
 
         window.resetApp = () => location.reload();
         window.onload = updateSystemNotice;
