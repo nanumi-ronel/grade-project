@@ -140,13 +140,16 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 환경 변수 설정
-        const firebaseConfig = JSON.parse(__firebase_config);
+        /**
+         * 보안 경고: GitHub에 업로드할 때 아래 설정값들이 직접 노출되지 않도록 주의하세요.
+         * 본 환경에서는 주입된 시스템 변수를 사용하여 안전합니다.
+         */
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* 개인용으로 쓸 경우 여기에 설정 입력 */ };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const apiKey = ""; // API Key is handled by environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'grade-app-default';
+        const apiKey = typeof __api_key !== 'undefined' ? __api_key : ""; // Gemini API 키
 
         // 등급제 상수
         const system9 = [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00];
@@ -157,10 +160,14 @@
 
         // 초기 인증 처리
         const init = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("인증 오류:", error);
             }
         };
         init();
@@ -170,7 +177,7 @@
             if (u) loadHistory();
         });
 
-        // 히스토리 관리
+        // 히스토리 관리 (보안을 위해 규칙 적용 경로 사용)
         function loadHistory() {
             if (!user) return;
             const ref = collection(db, 'artifacts', appId, 'users', user.uid, 'grades');
@@ -209,7 +216,7 @@
             if (!confirm("정말로 이 기록을 삭제하시겠습니까?")) return;
             try {
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'grades', docId));
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("삭제 오류:", e); }
         };
 
         window.saveCurrentResults = async () => {
@@ -236,12 +243,10 @@
             finally { btn.disabled = false; }
         };
 
-        // 등급제 및 학년 판별 유틸리티
+        // 등급제 판별 유틸리티
         function getCurrentGradeSystem() {
             const currentYear = new Date().getFullYear();
             const gradeLevel = parseInt(document.getElementById('student-grade-level').value);
-            
-            // 2027학년도 전면 시행 혹은 고1, 고2는 5등급제 적용
             if (currentYear >= 2027 || gradeLevel < 3) {
                 return { cutoffs: system5, name: "5등급제" };
             } else {
@@ -252,7 +257,7 @@
         window.updateSystemNotice = () => {
             const system = getCurrentGradeSystem();
             document.getElementById('system-notice').innerText = `* 선택된 학년 기준: [${system.name}] 분석 시스템 가동 중`;
-            if(window.currentAnalysis) calculateStrategy(); // 등급제 변경 시 재계산
+            if(window.currentAnalysis) calculateStrategy();
         };
 
         // 전략 계산 엔진
@@ -339,11 +344,16 @@
         };
 
         async function processImage(b64) {
+            if (!apiKey) {
+                alert("분석을 위한 API 키가 설정되지 않았습니다.");
+                return;
+            }
+
             const prompt = `성적표 이미지에서 다음 정보를 추출하여 정확한 JSON으로 응답하세요:
             - schoolName: 학교명
             - studentName: 이름
-            - gradeLevel: 학년 (텍스트에서 '1학년', '2학년', '3학년' 등을 찾아 숫자 1, 2, 3 중 하나로만 출력)
-            - subjects: [{name: 과목명, achievement: 성취도(A/B/C), rank: 석차(숫자만), total: 수강자수(숫자만)}]`;
+            - gradeLevel: 학년 (숫자 1, 2, 3 중 하나)
+            - subjects: [{name: 과목명, achievement: 성취도(A/B/C), rank: 석차, total: 수강자수}]`;
             
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
@@ -356,8 +366,6 @@
                 
                 if (result.schoolName) document.getElementById('school-name').value = result.schoolName;
                 if (result.studentName) document.getElementById('student-name').value = result.studentName;
-                
-                // 추출된 학년에 따른 시스템 자동 연동
                 if (result.gradeLevel) {
                     const gl = String(result.gradeLevel).replace(/[^1-3]/g, '');
                     if (gl) {
@@ -365,9 +373,8 @@
                         updateSystemNotice();
                     }
                 }
-                
                 result.subjects?.forEach(s => addSubjectWithValue(s.name, s.achievement, s.rank, s.total));
-            } catch(e) { console.error("OCR Error:", e); }
+            } catch(e) { console.error("OCR 분석 오류:", e); }
         }
 
         window.addSubjectWithValue = (n='', a='A', r='', t='') => {
