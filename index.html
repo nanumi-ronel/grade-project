@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grade Strategy Pro - Ready to Use</title>
+    <title>Grade Strategy Pro - Debug & Manual</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap');
@@ -18,44 +18,45 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-[#f8fafc] min-h-screen text-slate-900">
     <div class="max-w-6xl mx-auto p-5 md:p-8">
-        <!-- 상단 헤더 섹션 -->
+        <!-- Header -->
         <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
-                <span class="text-indigo-600 font-bold tracking-tight text-sm uppercase">Academic Performance Tracker</span>
-                <h1 class="text-3xl font-extrabold tracking-tight mt-1">성적 분석 & 향상 전략</h1>
-                <p class="text-xs text-slate-500 mt-1" id="system-notice">* API 키를 입력해야 사진 분석이 가능합니다.</p>
+                <span class="text-indigo-600 font-bold tracking-tight text-sm uppercase italic">Final Grade Solution</span>
+                <h1 class="text-3xl font-extrabold tracking-tight mt-1">성적 분석 시스템</h1>
+                <p class="text-xs text-slate-500 mt-1" id="system-notice">* API 키가 없어도 수동으로 과목을 추가할 수 있습니다.</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <!-- API 키 입력 필드 추가 (보안을 위해 깃허브 소스에는 안 남도록 처리) -->
-                <input type="password" id="user-api-key" placeholder="Gemini API Key 입력" class="text-xs border border-slate-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                <div class="relative">
+                    <input type="password" id="user-api-key" placeholder="Gemini API Key (AIza...)" class="text-xs border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm w-56">
+                    <span class="absolute -top-6 left-1 text-[10px] text-slate-400 font-bold">API KEY (옵션)</span>
+                </div>
                 
-                <button onclick="resetApp()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all">
-                    새로고침
-                </button>
-                <label class="cursor-pointer bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
-                    성적표 스캔 (OCR)
+                <button onclick="resetApp()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all">초기화</button>
+                
+                <label class="cursor-pointer bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 text-indigo-700 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm flex items-center gap-2">
+                    성적표 사진 분석
                     <input type="file" id="multi-upload" accept="image/*" multiple class="hidden" onchange="handleMultipleImages(event)">
                 </label>
-                <button onclick="calculateStrategy()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg">
-                    분석 실행
-                </button>
+                
+                <button onclick="calculateStrategy()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg">결과 계산</button>
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- 좌측: 설정 및 입력 영역 -->
+            <!-- Left Panel -->
             <div class="lg:col-span-4 space-y-6">
                 <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <h2 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">학생 및 학기 정보</h2>
+                    <h2 class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">기본 정보</h2>
                     <div class="space-y-4">
-                        <input type="text" id="school-name" placeholder="학교명" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
+                        <input type="text" id="school-name" placeholder="학교명 (예: 한국고등학교)" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none text-sm focus:ring-1 focus:ring-indigo-300">
                         <div class="grid grid-cols-2 gap-3">
-                            <input type="text" id="student-name" placeholder="학생 이름" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
-                            <select id="student-grade-level" onchange="updateSystemNotice()" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none">
+                            <input type="text" id="student-name" placeholder="학생 이름" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none text-sm focus:ring-1 focus:ring-indigo-300">
+                            <select id="student-grade-level" onchange="updateSystemNotice()" class="w-full bg-slate-50 border-none rounded-xl p-3 outline-none text-sm focus:ring-1 focus:ring-indigo-300">
                                 <option value="1">1학년 (5등급제)</option>
                                 <option value="2">2학년 (5등급제)</option>
                                 <option value="3" selected>3학년 (9등급제)</option>
@@ -64,32 +65,45 @@
                     </div>
                 </section>
 
-                <!-- 과목 입력 리스트 -->
                 <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">과목별 성적</h2>
-                        <button onclick="addSubject()" class="text-indigo-600 text-xs font-bold">+ 추가</button>
+                        <button onclick="addSubject()" class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-xs font-bold hover:bg-indigo-100">+ 직접 추가</button>
                     </div>
                     <div id="ai-loading" class="hidden mb-4 p-4 bg-indigo-50 rounded-xl flex items-center gap-3">
                         <div class="loading-spinner"></div>
-                        <span class="text-xs font-semibold text-indigo-700 italic">성적표 분석 중...</span>
+                        <span class="text-xs font-semibold text-indigo-700 italic">성적표 이미지 스캐닝 중...</span>
                     </div>
-                    <div id="subject-list" class="space-y-3"></div>
+                    <div id="subject-list" class="space-y-3">
+                        <!-- 기본 과목 하나 노출 -->
+                    </div>
                 </section>
             </div>
 
-            <!-- 우측: 분석 결과 영역 -->
+            <!-- Right Panel -->
             <div class="lg:col-span-8 space-y-6">
-                <div id="empty-state" class="bg-white border-2 border-dashed border-slate-200 rounded-3xl h-[400px] flex flex-col items-center justify-center text-slate-400 text-center p-6">
-                    <p class="font-bold text-slate-500 text-lg">데이터 분석 대기 중</p>
+                <div id="empty-state" class="bg-white border-2 border-dashed border-slate-200 rounded-3xl h-[450px] flex flex-col items-center justify-center text-slate-400 text-center p-6">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </div>
+                    <p class="font-bold text-slate-500 text-lg">데이터 입력 대기 중</p>
+                    <p class="text-sm mt-2 max-w-xs">왼쪽에서 과목을 직접 추가하거나,<br>사진을 올려 성적을 자동으로 가져오세요.</p>
                 </div>
+
                 <div id="analysis-dashboard" class="hidden space-y-4 animate-fade-in">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <p class="text-xs font-bold text-indigo-400 uppercase">평균 등급</p>
-                            <p class="text-4xl font-black text-indigo-600" id="curr-avg-grade">-</p>
+                            <p class="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Total Average</p>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-5xl font-black text-slate-900" id="curr-avg-grade">0.00</span>
+                                <span class="text-lg font-bold text-indigo-600">등급</span>
+                            </div>
                         </div>
-                        <p class="text-xl font-bold text-slate-700" id="mode-display"></p>
+                        <div class="h-12 w-px bg-slate-100 hidden md:block"></div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-1" id="mode-display-label">적용 시스템</p>
+                            <p class="text-xl font-bold text-slate-700" id="mode-display">-</p>
+                        </div>
                     </div>
                     <div id="result-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                 </div>
@@ -97,10 +111,24 @@
         </div>
     </div>
 
+    <!-- Error Modal (Custom) -->
+    <div id="error-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-red-600 mb-2">분석 오류 발생</h3>
+            <p id="error-message" class="text-sm text-slate-600 mb-6 bg-slate-50 p-3 rounded-lg font-mono break-all"></p>
+            <button onclick="closeError()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">확인</button>
+        </div>
+    </div>
+
     <script>
-        // 이 버전은 Firebase 없이 로컬/깃허브 페이지에서 OCR 동작 확인용으로 최적화됨
         const system9 = [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00];
         const system5 = [0.10, 0.34, 0.66, 0.90, 1.00];
+
+        function showError(msg) {
+            document.getElementById('error-message').innerText = msg;
+            document.getElementById('error-modal').classList.remove('hidden');
+        }
+        function closeError() { document.getElementById('error-modal').classList.add('hidden'); }
 
         window.updateSystemNotice = () => {
             const gl = parseInt(document.getElementById('student-grade-level').value);
@@ -113,23 +141,37 @@
             const div = document.createElement('div');
             div.className = 'bg-slate-50 p-4 rounded-xl border border-slate-100 relative group animate-fade-in';
             div.innerHTML = `
-                <input type="text" value="${n}" class="subject-name font-bold text-slate-800 bg-transparent w-full mb-1 outline-none" placeholder="과목명">
+                <input type="text" value="${n}" class="subject-name font-bold text-slate-800 bg-transparent w-full mb-2 outline-none text-sm" placeholder="과목명 (예: 수학I)">
                 <div class="grid grid-cols-3 gap-2">
-                    <select class="subject-achievement text-[10px] p-2 rounded-lg border-none"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
-                    <input type="number" value="${r}" class="current-rank text-[10px] p-2 rounded-lg border-none" placeholder="등수">
-                    <input type="number" value="${t}" class="total-students text-[10px] p-2 rounded-lg border-none" placeholder="총원">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[9px] font-bold text-slate-400 pl-1 uppercase">성취도</label>
+                        <select class="subject-achievement text-xs p-2 rounded-lg border-none shadow-sm outline-none bg-white">
+                            <option value="A" ${a==='A'?'selected':''}>A</option>
+                            <option value="B" ${a==='B'?'selected':''}>B</option>
+                            <option value="C" ${a==='C'?'selected':''}>C</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[9px] font-bold text-slate-400 pl-1 uppercase">등수</label>
+                        <input type="number" value="${r}" class="current-rank text-xs p-2 rounded-lg border-none shadow-sm outline-none bg-white" placeholder="등수">
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[9px] font-bold text-slate-400 pl-1 uppercase">총원</label>
+                        <input type="number" value="${t}" class="total-students text-xs p-2 rounded-lg border-none shadow-sm outline-none bg-white" placeholder="총원">
+                    </div>
                 </div>
-                <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-slate-300 hover:text-red-400">×</button>
+                <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-slate-300 hover:text-red-400 transition-colors">×</button>
             `;
             list.appendChild(div);
         };
+
         window.addSubject = () => addSubjectWithValue();
 
         window.calculateStrategy = () => {
             const rows = document.querySelectorAll('#subject-list > div');
             const gl = parseInt(document.getElementById('student-grade-level').value);
             const cutoffs = gl < 3 ? system5 : system9;
-            const sysName = gl < 3 ? "5등급제" : "9등급제";
+            const sysName = gl < 3 ? "2025 개정 (5등급제)" : "기존 체제 (9등급제)";
             
             let sum = 0, count = 0;
             const container = document.getElementById('result-container');
@@ -147,8 +189,14 @@
                     sum += g; count++;
                     
                     const card = document.createElement('div');
-                    card.className = 'bg-white p-4 rounded-xl border border-slate-100 shadow-sm';
-                    card.innerHTML = `<h4 class="font-bold text-slate-800">${n} - ${g}등급</h4><p class="text-xs text-slate-500 mt-1">분석 완료</p>`;
+                    card.className = 'bg-white p-5 rounded-2xl border border-slate-100 shadow-sm animate-fade-in border-l-4 border-l-indigo-500';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-slate-800">${n}</h4>
+                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md font-bold">${(ratio*100).toFixed(1)}%</span>
+                        </div>
+                        <p class="text-3xl font-black text-slate-900 mt-2">${g}<span class="text-sm font-normal text-slate-400 ml-1">등급</span></p>
+                    `;
                     container.appendChild(card);
                 }
             });
@@ -158,55 +206,86 @@
                 document.getElementById('mode-display').innerText = sysName;
                 document.getElementById('empty-state').classList.add('hidden');
                 document.getElementById('analysis-dashboard').classList.remove('hidden');
+                // 결과 영역으로 스크롤
+                document.getElementById('analysis-dashboard').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                alert("과목명, 등수, 총원을 모두 입력한 과목이 없습니다.");
             }
         };
 
         window.handleMultipleImages = async (e) => {
-            const apiKey = document.getElementById('user-api-key').value;
-            if(!apiKey) return alert("상단에 Gemini API Key를 입력해주세요!");
+            const apiKey = document.getElementById('user-api-key').value.trim();
+            if(!apiKey) return showError("이미지 분석을 위해 상단에 발급받으신 Gemini API Key를 입력해주세요. 키가 없으면 '+ 직접 추가' 버튼으로 성적을 입력할 수 있습니다.");
 
             const files = Array.from(e.target.files);
             document.getElementById('ai-loading').classList.remove('hidden');
             
             for (let f of files) {
-                const b64 = await new Promise(r => {
-                    const reader = new FileReader();
-                    reader.onload = () => r(reader.result.split(',')[1]);
-                    reader.readAsDataURL(f);
-                });
-                await processImage(b64, apiKey);
+                try {
+                    const b64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(f);
+                    });
+                    await processImage(b64, apiKey);
+                } catch (err) {
+                    showError("이미지 파일을 읽는 중 오류가 발생했습니다.");
+                }
             }
             document.getElementById('ai-loading').classList.add('hidden');
             calculateStrategy();
         };
 
         async function processImage(b64, key) {
-            const prompt = "성적표 이미지에서 schoolName, studentName, gradeLevel(1,2,3 중 하나), subjects[{name, achievement, rank, total}]를 JSON으로 추출해줘.";
+            const prompt = `성적표 이미지에서 학교명(schoolName), 이름(studentName), 학년(gradeLevel: 1,2,3 중 숫자), 과목 리스트(subjects: {name, achievement, rank, total})를 추출해서 JSON으로만 대답해줘.`;
+            
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: "image/png", data: b64 } }] }] })
                 });
-                const d = await res.json();
-                const text = d.candidates[0].content.parts[0].text.replace(/```json|```/g, '');
-                const result = JSON.parse(text);
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(`${data.error.message} (${data.error.status})`);
+                }
+
+                if (!data.candidates || !data.candidates[0]) {
+                    throw new Error("이미지에서 데이터를 찾을 수 없습니다.");
+                }
+
+                let text = data.candidates[0].content.parts[0].text;
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) throw new Error("분석 데이터 형식이 올바르지 않습니다.");
+                
+                const result = JSON.parse(jsonMatch[0]);
                 
                 if (result.schoolName) document.getElementById('school-name').value = result.schoolName;
                 if (result.studentName) document.getElementById('student-name').value = result.studentName;
                 if (result.gradeLevel) {
-                    document.getElementById('student-grade-level').value = result.gradeLevel.toString().replace(/[^1-3]/g, '1');
-                    updateSystemNotice();
+                    const gl = result.gradeLevel.toString().replace(/[^1-3]/g, '');
+                    if (gl) {
+                        document.getElementById('student-grade-level').value = gl;
+                        updateSystemNotice();
+                    }
                 }
                 result.subjects?.forEach(s => addSubjectWithValue(s.name, s.achievement, s.rank, s.total));
+
             } catch(e) { 
-                console.error(e); 
-                alert("인식 오류: API 키가 맞는지, 혹은 이미지 화질을 확인해주세요.");
+                showError(e.message);
             }
         }
 
         window.resetApp = () => location.reload();
-        window.onload = updateSystemNotice;
+        window.onload = () => {
+            updateSystemNotice();
+            // 시작할 때 빈 칸 하나 생성
+            addSubject();
+        };
     </script>
 </body>
 </html>
