@@ -20,6 +20,9 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [modal, setModal] = useState({ show: false, title: '', desc: '', theme: 'indigo' });
+  
+  // 무료 사용자 제한을 위한 상태 (간이 쿨타임)
+  const [lastRequestTime, setLastRequestTime] = useState(0);
 
   const CUTOFFS = { '9': [0.04, 0.11, 0.23, 0.40, 0.60, 0.77, 0.89, 0.96, 1.00], '5': [0.10, 0.34, 0.66, 0.90, 1.00] };
 
@@ -59,7 +62,24 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
 
+    // [제한 1] 파일 크기 제한 (무료 API 부하 방지 - 4MB 이하)
+    if (file.size > 4 * 1024 * 1024) {
+      showToast("제한됨", "이미지 크기는 4MB를 넘을 수 없습니다.", "rose");
+      e.target.value = '';
+      return;
+    }
+
+    // [제한 2] 요청 쿨타임 (무료 RPM 15회 고려 - 10초 내 재요청 방지)
+    const now = Date.now();
+    if (now - lastRequestTime < 10000) {
+      showToast("대기 중", "분석 요청은 10초에 한 번만 가능합니다.", "rose");
+      e.target.value = '';
+      return;
+    }
+
     setIsLoading(true);
+    setLastRequestTime(now);
+
     try {
       const base64 = await new Promise(r => {
         const reader = new FileReader();
@@ -69,7 +89,6 @@ export default function App() {
 
       const prompt = `성적표 이미지에서 학생명과 과목별 [과목명, 성취도, 석차, 수강자수]를 추출하여 JSON 형식으로 응답해줘. JSON 구조: {"studentName": "이름", "subjects": [{"name": "과목명", "achieve": "A", "rank": 10, "total": 200}]}`;
       
-      // [변경 포인트] 외부 API가 아닌 나의 프록시 서버(/api/analyze)로 요청을 보냅니다.
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -79,6 +98,10 @@ export default function App() {
         })
       });
 
+      // [제한 3] API 사용량 초과(429) 또는 서버 에러 처리
+      if (response.status === 429) {
+        throw new Error("RATE_LIMIT");
+      }
       if (!response.ok) throw new Error("PROXY_ERROR");
 
       const result = await response.json();
@@ -90,7 +113,11 @@ export default function App() {
       }
       showToast("인식 성공", "성적표 데이터를 성공적으로 가져왔습니다.", "emerald");
     } catch (err) {
-      showToast("인식 실패", "이미지를 분석할 수 없습니다. 프록시 서버 설정을 확인하세요.", "rose");
+      if (err.message === "RATE_LIMIT") {
+        showToast("사용량 초과", "현재 서버 요청이 너무 많습니다. 잠시 후 다시 시도하세요.", "rose");
+      } else {
+        showToast("인식 실패", "이미지를 분석할 수 없습니다. 프록시 서버 설정을 확인하세요.", "rose");
+      }
     } finally {
       setIsLoading(false);
       e.target.value = '';
@@ -164,7 +191,10 @@ export default function App() {
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/60 border border-slate-100">
               <h2 className="text-2xl font-black mb-2">성적 데이터 분석</h2>
-              <p className="text-slate-500 text-sm mb-8">성적표를 스캔하거나 직접 입력하여 전략을 세우세요.</p>
+              <div className="flex items-center gap-2 mb-8">
+                <span className="bg-slate-100 text-[10px] px-2 py-1 rounded-md font-bold text-slate-500">Free Tier</span>
+                <p className="text-slate-500 text-sm">성적표를 스캔하여 전략을 세우세요.</p>
+              </div>
 
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="space-y-1">
@@ -181,9 +211,9 @@ export default function App() {
               </div>
 
               <div className="flex gap-3 mb-8">
-                <label className="flex-1 cursor-pointer bg-indigo-600 text-white px-4 py-4 rounded-2xl text-sm font-black text-center shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all">
+                <label className={`flex-1 cursor-pointer bg-indigo-600 text-white px-4 py-4 rounded-2xl text-sm font-black text-center shadow-lg flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                   <Camera size={18} /> 성적표 스캔
-                  <input type="file" onChange={handleScan} accept="image/*" className="hidden" />
+                  <input type="file" onChange={handleScan} accept="image/*" className="hidden" disabled={isLoading} />
                 </label>
                 <button onClick={addSubjectRow} className="bg-slate-100 text-slate-600 px-6 py-4 rounded-2xl text-sm font-black hover:bg-slate-200 transition-all">
                   추가
